@@ -4,7 +4,7 @@ organization := "com.aerospike"
 
 javacOptions in (Compile, compile) ++= Seq("-source", "1.8", "-target", "1.8", "-g:lines")
 
-libraryDependencies ++= Seq("com.aerospike" % "aerospike-client" % "3.3.3",
+libraryDependencies ++= Seq("com.aerospike" % "aerospike-client" % "4.2.0",
 	"commons-cli" % "commons-cli" % "1.3.1",
 	"log4j" % "log4j" % "1.2.17",
 	"joda-time" % "joda-time" % "2.9.4",

@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2012-2015 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
@@ -18,6 +18,7 @@ package com.aerospike.helper.model;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -57,8 +58,9 @@ public class Set {
 
     public void setInfo(String info) {
         //ns_name=test:set_name=demo:n_objects=1:set-stop-write-count=0:set-evict-hwm-count=0:set-enable-xdr=use-default:set-delete=false
+        //ns_name=test:set_name=bad:name:n_objects=1:set-stop-write-count=0:set-evict-hwm-count=0:set-enable-xdr=use-default:set-delete=false
         if (!info.isEmpty()) {
-            String[] parts = info.split(":");
+            String[] parts = splitWithFix(info);
             if (values == null) {
                 values = new HashMap<String, NameValuePair>();
             }
@@ -66,13 +68,17 @@ public class Set {
             for (String part : parts) {
                 String[] kv = part.split("=");
                 String key = kv[0];
-                String value = kv[1];
-                NameValuePair storedValue = values.get(key);
-                if (storedValue == null) {
-                    storedValue = new NameValuePair(this, key, value);
-                    values.put(key, storedValue);
-                } else {
-                    storedValue.value = value;
+
+                // lenght should always be 2 - fix should prevent errors
+                if (kv.length == 2) {
+                    String value = kv[1];
+                    NameValuePair storedValue = values.get(key);
+                    if (storedValue == null) {
+                        storedValue = new NameValuePair(this, key, value);
+                        values.put(key, storedValue);
+                    } else {
+                        storedValue.value = value;
+                    }
                 }
             }
             applySetName();
@@ -134,4 +140,58 @@ public class Set {
     private void applySetName(){
         this.name = values.get("set") == null ? (String)values.get("set_name").value : (String)values.get("set").value;
     }
+
+    /**
+     * Fix to allow having sets that include ":" characters.
+     */
+    private String[] splitWithFix(final String sets) {
+        final LinkedList<String> keyValuesSplitFix = new LinkedList<>();
+
+        try {
+            if (sets.length() > 3) {
+
+                String key;
+                String value = "";
+
+                int keyEndIndex = sets.length();
+                int valueEndIndex = sets.length();
+
+                boolean valueIsSet = false;
+
+                for (int i = sets.length() - 1; i >= 0; i--) {
+
+                    if (!valueIsSet) {
+
+                        if ('=' == sets.charAt(i)) {
+                            value = sets.substring(i, valueEndIndex); // include equals too
+                            keyEndIndex = i;
+                            valueIsSet = true;
+                        }
+
+                    } else {
+
+                        if (':' == sets.charAt(i)) {
+                            key = sets.substring(i + 1, keyEndIndex);
+                            keyValuesSplitFix.addFirst(key + value);
+                            valueEndIndex = i;
+                            valueIsSet = false;
+                        }
+
+                    }
+
+                }
+
+                key = sets.substring(0, keyEndIndex);
+                keyValuesSplitFix.addFirst(key + value);
+
+                return keyValuesSplitFix.toArray(new String[]{});
+            }
+        } catch (Exception e) {
+            // do nothing
+        }
+
+        return new String[] {};
+
+    }
+
 }
