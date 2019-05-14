@@ -62,7 +62,7 @@ public class Set {
         if (!info.isEmpty()) {
             String[] parts = splitWithFix(info);
             if (values == null) {
-                values = new HashMap<String, NameValuePair>();
+                values = new HashMap<>();
             }
 
             for (String part : parts) {
@@ -88,26 +88,30 @@ public class Set {
     public void mergeSetInfo(String info) {
 	//ns=test:set=selector:objects=1000:memory_data_bytes=0:deleting=false:stop-writes-count=0:set-enable-xdr=use-default:disable-eviction=false
         if (!info.isEmpty()) {
-            String[] parts = info.split(":");
+            String[] parts = splitWithFix(info);
             if (values == null) {
-                values = new HashMap<String, NameValuePair>();
+                values = new HashMap<>();
             }
 
             for (String part : parts) {
                 String[] kv = part.split("=");
                 String key = kv[0];
-                String value = kv[1];
-                NameValuePair storedValue = values.get(key);
-                if (storedValue == null) {
-                    storedValue = new NameValuePair(this, key, value);
-                    values.put(key, storedValue);
-                } else {
-                    try {
-                        Long newValue = Long.parseLong(value);
-                        Long oldValue = Long.parseLong(storedValue.value.toString());
-                        storedValue.value = Long.toString(oldValue + newValue);
-                    } catch (NumberFormatException e) {
-                        storedValue.value = value;
+
+                // lenght should always be 2 - fix should prevent errors
+                if (kv.length == 2) {
+                    String value = kv[1];
+                    NameValuePair storedValue = values.get(key);
+                    if (storedValue == null) {
+                        storedValue = new NameValuePair(this, key, value);
+                        values.put(key, storedValue);
+                    } else {
+                        try {
+                            Long newValue = Long.parseLong(value);
+                            Long oldValue = Long.parseLong(storedValue.value.toString());
+                            storedValue.value = Long.toString(oldValue + newValue);
+                        } catch (NumberFormatException e) {
+                            storedValue.value = value;
+                        }
                     }
                 }
             }
@@ -142,7 +146,10 @@ public class Set {
     }
 
     /**
-     * Fix to allow having sets that include ":" characters.
+     * Fix to allow having sets that include ":" characters. <p>
+     *
+     * </p>Related to aerospike bug that allows creating sets with colons. If aerospike contains AT LEAST ONE set like that,
+     * using this library without the fix would make throw an IndexOutOfBoundsException.
      */
     private String[] splitWithFix(final String sets) {
         final LinkedList<String> keyValuesSplitFix = new LinkedList<>();
