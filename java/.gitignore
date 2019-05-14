@@ -34,10 +34,3 @@ nbdist/
 
 ### Mac OS ###
 .DS_Store
-
-### Vagrant ###
-.vagrant
-ubuntu-*.log
-
-### Ansible ###
-.ansible/*.retry
